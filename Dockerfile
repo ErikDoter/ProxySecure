@@ -4,13 +4,13 @@ WORKDIR /build
 COPY . .
 
 USER root
-RUN go build  main.go
+RUN go build  ./cmd/main.go
 
 FROM ubuntu:20.04
 COPY . .
 
 EXPOSE 5432
-EXPOSE 5000
+EXPOSE 8080
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get -y update && apt -y install postgresql-12
@@ -36,5 +36,5 @@ VOLUME  ["/etc/postgresql", "/var/log/postgresql", "/var/lib/postgresql"]
 #CMD ./run
 
 USER root
-COPY --from=builder  build/main /usr/bin
-CMD /etc/init.d/postgresql start && run
+COPY --from=builder  /build/main /usr/bin
+CMD /etc/init.d/postgresql start && main
