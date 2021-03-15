@@ -43,16 +43,16 @@ func CheckXSS(w http.ResponseWriter, r *http.Request, url string, db *pgx.ConnPo
 		}
 	}
 	request.URL.RawQuery = answer
+	fmt.Println(request)
 	resp, err := http.DefaultTransport.RoundTrip(&request)
 	if err != nil {
 		fmt.Println("error with round trip")
 		return
 	}
-	fmt.Println(resp)
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("error with Read all")
 		return
 	}
-	fmt.Println(body)
+	fmt.Println(string(body))
 }
