@@ -26,7 +26,8 @@ func main() {
 					i++
 				}
 			}
-			fmt.Println(nameFamilia[0], nameFamilia[1])
+			result := "Ваше имя: " + nameFamilia[0] + "Ваша фамилия" + nameFamilia[1]
+			w.Write([]byte(result))
 		}),
 	}
 	fmt.Println("listen 8887")
