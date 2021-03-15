@@ -13,6 +13,7 @@ func main() {
 			familia := r.URL.Query().Get("familia")
 			result := "Ваше имя: " + name + " Ваша фамилия: " + familia
 			w.Write([]byte(result))
+			w.WriteHeader(200)
 		}),
 	}
 	fmt.Println("listen 8887")
