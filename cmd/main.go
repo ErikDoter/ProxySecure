@@ -34,7 +34,7 @@ func main() {
 		}),
 		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler)),
 	}
-	fmt.Println("listen 8888")
+	fmt.Println("listen 8080")
 	fmt.Println("/requests - Список всех запросов")
 	fmt.Println("/request/{id} - Повторить запрос с этим id")
 	fmt.Println("/xss/{id} - Проверить на уязвимость xss запрос с этим id")
