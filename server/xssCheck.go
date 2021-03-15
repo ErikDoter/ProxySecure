@@ -10,6 +10,7 @@ import (
 )
 
 func CheckXSS(w http.ResponseWriter, r *http.Request, url string, db *pgx.ConnPool) {
+	attackVector := "vulnerable'\"><img%20src%20on%20error=alert()>"
 	buffer := strings.Split(url, "/")
 	id, err := strconv.Atoi(buffer[2])
 	if err != nil {
@@ -20,39 +21,26 @@ func CheckXSS(w http.ResponseWriter, r *http.Request, url string, db *pgx.ConnPo
 		fmt.Println("request doesn't exist")
 		return
 	}
-	buf := strings.Split(request.URL.RawQuery,"&")
-	var res []string
-	for _, val := range buf {
-		piece := strings.Split(val, "=")
-		for _, val2 := range piece {
-			res = append(res, val2)
+	oldQuery := request.URL.RawQuery
+	for key, value := range request.URL.Query() {
+		request.URL.RawQuery = strings.ReplaceAll(request.URL.RawQuery, value[0], attackVector)
+		resp, err := http.DefaultTransport.RoundTrip(&request)
+		if err != nil {
+			fmt.Println("error with round trip")
+			return
 		}
-	}
-	var answer string
-	for index, value := range res {
-		if index % 2 == 0 {
-			answer = answer + value
-			if index != len(res) - 1 {
-				answer += "="
-			}
-		} else if index % 2 == 1 {
-			answer = answer + "vulnerable'\"><img src onerror=alert()>"
-			if index != len(res) - 1 {
-				answer += "&"
-			}
+
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Println("error with Read all")
+			return
 		}
+		if strings.Contains(string(body), "vulnerable'\"><img src on error=alert()>") {
+			w.Write([]byte(key + " - уязвимый параметр\n"))
+		} else {
+			w.Write([]byte(key + " - уязвимости не найдено\n"))
+		}
+		request.URL.RawQuery = oldQuery
+		resp.Body.Close()
 	}
-	request.URL.RawQuery = answer
-	fmt.Println(request)
-	resp, err := http.DefaultTransport.RoundTrip(&request)
-	if err != nil {
-		fmt.Println("error with round trip")
-		return
-	}
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("error with Read all")
-		return
-	}
-	fmt.Println(string(body))
 }

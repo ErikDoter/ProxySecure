@@ -67,6 +67,7 @@ func RepeatRequest(url string, w http.ResponseWriter, r *http.Request, db *pgx.C
 	request := GetRequest(id, db)
 	r = &request
 	http.Redirect(w, &request, request.URL.String(), 301)
+
 	return
 }
 
