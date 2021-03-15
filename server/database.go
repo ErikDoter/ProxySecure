@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/jackc/pgx"
 	"io"
@@ -12,11 +13,22 @@ import (
 )
 
 type requests struct {
-	Id int
+	Id int64
 	Method string
 	Url string
 	Headers string
 	Body string
+}
+
+type AllRequests []requests
+
+type writer struct {
+	bytes.Buffer
+}
+
+func (b *writer) Close() error {
+	b.Buffer.Reset()
+	return nil
 }
 
 func ConnectDb() *pgx.ConnPool {
@@ -75,13 +87,19 @@ func SaveRequest(db *pgx.ConnPool, r *http.Request) error {
 func GetRequest(id int, db *pgx.ConnPool) http.Request {
 	var result http.Request
 	var request requests
-	err := db.QueryRow("select * from requests where id = ?", id).Scan(&request.Id, &request.Method, &request.Url, &request.Headers, &request.Body)
+	err := db.QueryRow("select id, method, url, headers, body from requests where id = $1", id).Scan(&request.Id, &request.Method, &request.Url, &request.Headers, &request.Body)
 	if err != nil {
+		fmt.Println(err)
 		return http.Request{}
 	}
 	result.Method = request.Method
-	result.URL, _ = url.Parse(request.Url)
+	result.URL, err = url.Parse(request.Url)
+	if err != nil {
+		fmt.Println(err)
+		return http.Request{}
+	}
 	var bodyWriter io.ReadWriteCloser
+	bodyWriter = &writer{}
 	_, err = bodyWriter.Write([]byte(request.Body))
 	if err != nil {
 		fmt.Println(err)
@@ -97,4 +115,22 @@ func GetRequest(id int, db *pgx.ConnPool) http.Request {
 	}
 	result.Header = headMap
 	return result
+}
+
+func GetAllRequests(db *pgx.ConnPool) AllRequests{
+	var allReq AllRequests
+	rows, err := db.Query("select * from requests")
+	if err != nil {
+		return allReq
+	}
+	defer rows.Close()
+	for rows.Next() {
+		request := requests{}
+		err := rows.Scan(&request.Id, &request.Method, &request.Url, &request.Headers, &request.Body)
+		if err != nil {
+			return allReq
+		}
+		allReq = append(allReq, request)
+	}
+	return allReq
 }

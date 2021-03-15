@@ -18,8 +18,14 @@ func main() {
 				server.HandleTunneling(w, r)
 			} else  {
 				repeaterPattern := `^/request/[0-9]+$`
+				requestsPattern := `^/requests$`
+				xssPatern := `^/xss/[0-9]+`
 				if match, _ := regexp.Match(repeaterPattern, []byte(r.URL.String())); match {
-					fmt.Println(r.URL, "  ", match)
+					server.RepeatRequest(r.URL.String(), w, r, db)
+				} else if match, _ := regexp.Match(requestsPattern, []byte(r.URL.String())); match {
+					server.RequestList(w, r, db)
+				} else if match, _ := regexp.Match(xssPatern, []byte(r.URL.String())); match {
+					server.CheckXSS(w, r, r.URL.String(), db)
 				} else {
 					server.SaveRequest(db, r)
 					server.HandleHTTP(w, r)

@@ -1,9 +1,13 @@
 package server
 
 import (
+	"encoding/json"
+	"github.com/jackc/pgx"
 	"io"
 	"net"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -52,4 +56,28 @@ func copyHeader(dst, src http.Header) {
 			dst.Add(k, v)
 		}
 	}
+}
+
+func RepeatRequest(url string, w http.ResponseWriter, r *http.Request, db *pgx.ConnPool) {
+	buffer := strings.Split(url, "/")
+	id, err := strconv.Atoi(buffer[2])
+	if err != nil {
+		return
+	}
+	request := GetRequest(id, db)
+	r = &request
+	http.Redirect(w, &request, request.URL.String(), 301)
+	return
+}
+
+func RequestList(w http.ResponseWriter, r *http.Request, db *pgx.ConnPool) {
+	result := GetAllRequests(db)
+	answer, err := json.Marshal(result)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	w.Write(answer)
 }
